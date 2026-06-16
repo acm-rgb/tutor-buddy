@@ -1,0 +1,5 @@
+# OS cruft and local env
+.DS_Store
+Thumbs.db
+desktop.ini
+.env
