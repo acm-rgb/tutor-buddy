@@ -46,7 +46,8 @@ Between phases, get an explicit go-ahead before moving on. The plan from phase 2
 ## Researching the project and the user
 
 - **The user's profile.** This skill runs inside Claude Code and does not have access to outside memory. To personalize suggestions, first check the repo for context (`CLAUDE.md`, `README.md`, `package.json`/`pyproject.toml`). If nothing useful is there, ask 2-3 quick questions: their main skills, time available per week, and goal (learn / portfolio / money). Do not assume.
-- **An existing project.** When entering at phase 3, 4, or 5 on an existing codebase, inventory it cheaply first: `git status`, a Glob of the tree, the manifest/lockfile, and the CI config if any. Build a mental model from those before reading source. Reach for source files only when a specific check needs them.
+- **An existing project.** When entering at phase 3, 4, or 5 on an existing codebase, inventory it cheaply first: `git status`, a Glob of the tree, **every** dependency manifest and lockfile (do not assume a single project at the repo root - Glob for `package.json`, `pyproject.toml`, `requirements*.txt`, `Cargo.toml`, `go.mod`, and their lockfiles across the tree, ignoring `node_modules`, `.venv`, `dist`, `build`), and the CI config if any. Build a mental model from those before reading source. Reach for source files only when a specific check needs them.
+- **Monorepos.** Detect a workspace layout: a root `package.json` with a `"workspaces"` field, `pnpm-workspace.yaml`, `lerna.json`, `turbo.json`, `nx.json`, a `[workspace]` table in `Cargo.toml`, or simply more than one manifest found by Glob (ignoring `node_modules`, `.venv`, `dist`, `build`). Record every workspace root. An incomplete inventory here becomes a false PASS in the security audit - a workspace you never listed is a workspace you never scan - so enumerate fully.
 
 ## Phase 3 - Build discipline
 
