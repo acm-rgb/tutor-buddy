@@ -1,165 +1,197 @@
 # tutor-buddy 🛡️
 
-> A Claude Code skill that takes vibecoders and beginners from raw idea to a secured, GitHub-ready project — without the mistakes that usually follow.
+> A Claude Code skill that takes vibecoders and beginners from a raw idea to a secured,
+> GitHub-ready project — without the mistakes that usually follow.
 
-AI-assisted coding makes it dangerously easy to commit a real API key, install a package that was hallucinated and then registered by an attacker, build ten features before one works, or push code that a single malicious pull request can compromise. Tutor-buddy exists to quietly prevent all of that, without adding ceremony or lecturing.
-
----
-
-## Technologies Used
-
-- **[Claude Code](https://docs.anthropic.com/claude-code)** — the runtime that executes skills and reads the project's file system
-- **Claude Code Skills API** — the `.skill` format (a structured zip of Markdown instructions and reference files) that Claude Code loads and triggers contextually
-- **`gitleaks` / `trufflehog`** (optional) — secret scanners invoked in the audit phase
-- **`pip-audit` / `npm audit` / `osv-scanner`** — dependency vulnerability scanners, used conditionally per stack
-- **GitHub CLI (`gh`)** — used in the ship phase to create repos, set branch protection, and enable push protection non-interactively
-
-No application runtime is required. Tutor-buddy is pure instruction — a workflow that runs inside Claude Code on top of your project.
+AI-assisted coding makes it dangerously easy to commit a real API key, install a package an
+LLM hallucinated and an attacker then registered, build ten features before one works, or
+push code that a single malicious pull request can compromise. Tutor-buddy quietly prevents
+all of that — without adding ceremony or lecturing.
 
 ---
 
-## Features
+## What it is
 
-**Five-phase guided workflow**
+Tutor-buddy is **not an application**. It is a Claude Code *skill*: a set of Markdown
+instruction files that Claude Code loads and runs inside your project. There is no server,
+no runtime, no install-time build — just a workflow that executes on top of whatever you're
+building.
 
-```
-Ideate → Plan → Build → Security Audit → Ship
+It runs a five-phase, gated workflow:
+
+```text
+1. Ideate  →  2. Plan  →  3. Build  →  4. Security audit  →  5. Ship to GitHub
 ```
 
-Each phase is a gate. Nothing moves forward without explicit approval.
-
-**Idea engine**  
-Bring your own idea or ask for suggestions. Tutor-buddy stress-tests scope, identifies the riskiest assumption, and pins down the smallest version worth building — before a single line of code is written.
-
-**Contract-driven build**  
-The plan phase produces a full file/folder tree, boilerplate list, named and pinned dependencies, a `.env.example`, and a numbered build order. The build phase executes only that plan. Deviations are surfaced and approved, never silent.
-
-**Honest security audit**  
-Runs automatically at the end of every build. Threats are split by what can actually be verified at build time versus what cannot — and the distinction is stated plainly:
-
-| Group | What gets checked | How |
-|---|---|---|
-| A — Repo static checks | Secrets in tree and git history, vulnerable deps, typosquatting, slopsquatting, dependency confusion | `gitleaks`/grep, `pip-audit`/`npm audit`, registry lookups |
-| B — Hardening | `.gitignore`, CI action pinning, `GITHUB_TOKEN` permissions, branch protection | Automated config + setup in phase 5 |
-| C — Auth defenses | Rate limiting, breached-password checks, session hygiene | Code inspection — only if the project has login |
-| D — Human factors | Social engineering, phishing | Marked NOT VERIFIABLE. Three concrete habits given instead. |
-
-**Slopsquatting detection**  
-A specific risk in AI-assisted development: language models hallucinate plausible package names, and attackers pre-register them. Tutor-buddy checks that every direct dependency resolves to a real, established package on its registry.
-
-**Hardened GitHub setup**  
-Creates the repo (private by default), enables push protection and secret scanning, configures branch protection against malicious pull requests, and pins CI action versions to commit SHAs.
-
-**Token-economical**  
-Locates before reading, reads only relevant lines, batches questions with sensible defaults, never pastes full scanner logs back at you.
+Each phase is a gate. Nothing moves forward without your explicit go-ahead.
 
 ---
 
-## Keyboard Shortcuts / Trigger Phrases
-
-Tutor-buddy activates automatically — no need to call it by name. Natural phrases that trigger the skill:
-
-| What you say | Phase it enters |
-|---|---|
-| "I want to build...", "I have an idea for..." | Phase 1 — Ideate |
-| "Help me structure this project", "scaffold this" | Phase 2 — Plan |
-| Resumes after plan is approved | Phase 3 — Build |
-| "Is this project safe?", "audit my code" | Phase 4 — Security audit |
-| "Put this on GitHub", "help me ship this" | Phase 5 — Ship |
-
-You can jump into any phase. If you already have a project, "is my project safe?" skips straight to the audit.
-
----
-
-## The Process
-
-The core problem was that beginner-focused AI coding workflows tend to fall into one of two failure modes: they are either so permissive that they rubber-stamp bad decisions (leaked secrets, hallucinated packages, scope creep), or so process-heavy that the user gives up before shipping anything.
-
-The design goal was a workflow with genuine discipline but minimal friction.
-
-**Phase separation as a contract mechanism.** The plan phase produces a written contract. The build phase is not allowed to deviate from it silently. This addresses the most common vibecoding failure: scope expanding invisibly during a session until the project is unshippable.
-
-**Threat classification in the security audit.** The first design decision was to stop treating all attack vectors as equivalent. Some threats — secret leaks, vulnerable dependencies, typosquatted packages — can be verified and fixed by tooling at build time. Others, like CI pipeline poisoning, are configuration choices that the tooling sets up rather than scans. Auth defenses only apply if the project has authentication, so treating them as universal produces false findings. Human-layer attacks (phishing, social engineering) cannot be verified by any audit, and claiming otherwise creates exactly the false confidence the skill is designed to prevent. Each group was assigned the right treatment rather than the same treatment.
-
-**Slopsquatting as a first-class concern.** Standard dependency audits check for known CVEs in packages that exist. They do not check whether the package was real to begin with. In AI-assisted development, a hallucinated package name that an attacker has pre-registered is a credible supply chain risk, and it required an explicit check separate from the CVE scan.
-
-**Progressive disclosure for token economy.** The `SKILL.md` orchestrates the workflow but does not contain all of it. Each heavy phase has a reference file loaded only when that phase begins, keeping the active context small across the session.
-
-**Honesty as a design principle.** The skill explicitly tells the user what it cannot verify. This is a constraint on the content of the audit report, not just a disclaimer. A false green check is worse than no check.
-
----
-
-## What We Learned
-
-**Threat categorization matters more than threat volume.** A checklist of 11 attack vectors sounds thorough. Most checklists apply the same treatment to all of them — scan, check, pass/fail. The useful insight was that the right response to social engineering is fundamentally different from the right response to a secret leak, and mixing them into the same category produces either false confidence or useless noise.
-
-**The build contract solves a workflow problem, not just a technical one.** Requiring written plan approval before writing code sounds like overhead. In practice, it addresses the reason most vibe-built projects stall: the user and the assistant accumulate implicit decisions that neither has fully committed to, and the project quietly becomes incoherent. Making the plan explicit and requiring a signature forces the incoherence to surface before it is baked into the code.
-
-**Token economy is a UX concern, not just a cost concern.** A skill that reads whole files when it needs three lines, or dumps scanner output verbatim, creates a noisy session that discourages engagement. Treating tokens as a budget — locate before reading, summarize findings rather than pasting them — keeps the interaction fast and readable for a beginner audience.
-
----
-
-## How It Could Be Improved
-
-- **SBOM generation.** Producing a software bill of materials at the end of the build phase would make the dependency audit more durable and portable.
-- **Deployment phase.** The current workflow ends at GitHub. A phase 6 covering common deployment targets (Render, Railway, Vercel, Fly.io) with security-conscious defaults would complete the pipeline.
-- **Deeper slopsquatting heuristics.** Currently checks for package existence and approximate download counts. A more robust check would include age, maintainer reputation, and similarity score against known legitimate packages.
-- **Stack expansion.** Current defaults cover the most common beginner stacks. Mobile (React Native / Expo), browser extensions, and desktop apps (Tauri) are not yet covered.
-- **Configurable strictness.** A flag to run a lighter audit for rapid prototyping versus a stricter one for production-bound projects would let the same skill serve different stages of a project's lifecycle.
-
----
-
-## How to Run / Install
+## How to install
 
 **Requirements:** Claude Code with skills support.
 
-**1. Download**  
-Get `tutor-buddy.skill` from the [Releases](../../releases) page.
+1. **Download** `tutor-buddy.skill` from the [Releases](../../releases) page.
+2. **Unzip** it — it expands to a `tutor-buddy/` folder.
+3. **Place it** in a skills directory:
 
-**2. Install**  
-Unzip the `.skill` file — it expands to a `tutor-buddy/` folder. Place it in your skills directory:
+   ```bash
+   # Global (all projects)
+   mkdir -p ~/.claude/skills && mv tutor-buddy ~/.claude/skills/
 
-```bash
-# Global (available in all projects)
-mkdir -p ~/.claude/skills
-mv tutor-buddy ~/.claude/skills/
+   # Or project-only
+   mkdir -p .claude/skills && mv tutor-buddy .claude/skills/
+   ```
 
-# Or project-only
-mkdir -p .claude/skills
-mv tutor-buddy .claude/skills/
-```
+4. **Restart** Claude Code.
 
-**3. Restart Claude Code**
+---
 
-**4. Use it**  
-No invocation needed. Just describe what you want to build:
+## How to use
 
-```
+You don't call it by name — it activates from what you say. Just describe what you want:
+
+```text
 I want to build a price-drop monitor that emails me alerts
-```
-
-```
 I have no idea what to build — suggest something based on my background
-```
-
-```
 Is this project safe to push to a public repo?
-```
-
-```
 Help me put this on GitHub
 ```
 
-When a decision is needed, tutor-buddy asks one question at a time with a default. Reply "use the defaults" to keep moving.
+You can enter at any phase. "I have an idea" starts at Phase 1; "is my project safe?" jumps
+straight to the audit; "put this on GitHub" goes to shipping.
+
+| What you say | Phase it enters |
+| --- | --- |
+| "I want to build…", "I have an idea for…" | 1 — Ideate |
+| "Help me structure this", "scaffold this" | 2 — Plan |
+| *(resumes after the plan is approved)* | 3 — Build |
+| "Is this safe?", "audit my code" | 4 — Security audit |
+| "Put this on GitHub", "help me ship this" | 5 — Ship |
+
+When a decision is needed, tutor-buddy asks one question at a time with a sensible default.
+Reply **"use the defaults"** to keep moving.
+
+---
+
+## The five phases
+
+**1 · Ideate** — Bring your own idea or ask for one. Tutor-buddy stress-tests the scope,
+names the riskiest assumption, and pins down the smallest version worth building — before a
+line of code exists.
+
+**2 · Plan** — Produces a written *contract*: full file/folder tree, boilerplate list, named
+and pinned dependencies, a `.env.example`, and a numbered build order.
+
+**3 · Build** — Executes only the approved plan, milestone by milestone. Deviations are
+surfaced and approved, never silent. Secrets go in a gitignored `.env` from the start.
+
+**4 · Security audit** — Runs automatically at the end of every build, and on demand. The
+core idea is honest results, not a checklist that creates false confidence. Threats are split
+into four groups by what an automated, build-time audit can actually verify:
+
+| Group | What gets checked | How |
+| --- | --- | --- |
+| **A — Static repo checks** | Secrets in tree and git history, vulnerable deps, typosquatting, slopsquatting, dependency confusion | `gitleaks`/grep, `pip-audit`/`npm audit`/`osv-scanner`, registry lookups |
+| **B — Hardening** | `.gitignore`, CI action pinning, `GITHUB_TOKEN` permissions, branch protection | Config + setup in Phase 5 |
+| **C — Auth defenses** | Rate limiting, breached-password checks, session hygiene | Code inspection — only if the project has login |
+| **D — Human factors** | Social engineering, phishing | Marked **NOT VERIFIABLE** — concrete habits given instead |
+
+Group A runs once **per workspace** in monorepos. A workspace that isn't inventoried is a
+workspace that never gets scanned — so the audit never emits a global PASS that hides an
+unscanned workspace; it reports it as an explicit gap.
+
+**5 · Ship** — Creates the repo (private by default), enables push protection and secret
+scanning, configures branch protection against malicious PRs, and pins CI actions to commit
+SHAs.
+
+---
+
+## What makes it different
+
+**Slopsquatting detection.** Standard dependency audits check for known CVEs in packages
+that *exist*. They don't check whether a package was real to begin with. LLMs hallucinate
+plausible package names and attackers pre-register them — so tutor-buddy verifies every
+direct dependency resolves to a real, established package on its registry.
+
+**The plan is a contract.** Requiring written plan approval before code addresses the most
+common vibecoding failure: scope expanding invisibly until the project is unshippable.
+
+**Honesty over reassurance.** The audit states plainly what it cannot verify. A false green
+check is worse than no check — so human-factor threats are labelled NOT VERIFIABLE rather
+than rubber-stamped.
+
+**Token-economical.** Locates before reading, reads only the relevant lines, batches
+questions with defaults, and never pastes full scanner logs back at you.
+
+---
+
+## Repository layout
+
+```text
+SKILL.md                       # Orchestrator: stance, token rules, phase routing, Phase 3
+references/
+  ideation.md                  # Phase 1
+  planning.md                  # Phase 2
+  security-audit.md            # Phase 4 (most of the security logic)
+  github-setup.md              # Phase 5
+tests/
+  validate.py                  # Structural checks (reference + fixture integrity)
+  fixtures/                    # Sample projects with documented expected audit results
+.github/workflows/ci.yml       # Runs the structural checks on every push / PR
+```
+
+`SKILL.md` is an orchestrator, not the whole skill: each heavy phase's reference file is
+loaded only when that phase begins, keeping the active context small.
+
+---
+
+## Development & testing
+
+There's no application to unit-test — these checks guard the *instructions*.
+
+```bash
+# Reference integrity (every references/*.md cited in SKILL.md exists, and vice versa)
+# plus fixture integrity (every fixture ships an EXPECTATIONS.md). Runs in CI.
+python tests/validate.py
+```
+
+**Audit fixtures** under [`tests/fixtures/`](tests/fixtures/) are tiny sample projects, each
+exercising one Group A behavior with a documented `EXPECTATIONS.md`:
+
+| Fixture | Exercises | Expected |
+| --- | --- | --- |
+| `01-secret-in-source` | Secret-leak detection | FAIL |
+| `02-slopsquat-deps` | Typo / slopsquatting | FAIL on the bad names only |
+| `03-clean-single-root` | Happy path | PASS, no false positives |
+| `04-monorepo-hidden-workspace` | Monorepo inventory completeness | GAP, never a global PASS |
+
+To validate a change to the skill, point a Claude Code session at a fixture, run the audit,
+and compare the report against that fixture's `EXPECTATIONS.md`. A mismatch is a regression.
+See [`tests/README.md`](tests/README.md) for details.
+
+---
+
+## Roadmap
+
+- **SBOM generation** at the end of the build for a durable, portable dependency record.
+- **Deployment phase** (Render, Railway, Vercel, Fly.io) with security-conscious defaults.
+- **Deeper slopsquatting heuristics** — package age, maintainer reputation, name-similarity
+  scoring, not just existence and download counts.
+- **More stacks** — React Native / Expo, browser extensions, Tauri desktop apps.
+- **Configurable strictness** — a lighter audit for prototypes, a stricter one for
+  production-bound projects.
 
 ---
 
 ## Contributing
 
-Issues and PRs are welcome. If you find a security check that should be added, one that is overclaiming, or a stack that should be in the defaults, open an issue with the reasoning. Blunt feedback preferred.
+Issues and PRs welcome — blunt, reasoned feedback preferred. If you find a security check
+that's missing, overclaiming, or wrong, open an issue with the reasoning. See
+[Contributing.md](Contributing.md) for the bar a change has to clear.
 
 ---
 
 ## License
 
-MIT
+[MIT](LICENSE)
