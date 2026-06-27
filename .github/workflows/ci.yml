@@ -1,0 +1,29 @@
+name: CI
+
+# Practices what the skill preaches: least-privilege token, actions pinned to full
+# commit SHAs (not moving tags), no access to untrusted PR code with secrets.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  structure:
+    name: Structural checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Python
+        # actions/setup-python@v5.3.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+
+      - name: Validate reference and fixture integrity
+        run: python tests/validate.py

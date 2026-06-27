@@ -1,0 +1,5 @@
+# Stands in for .gitignore (the repo root .gitignore would otherwise swallow a real one).
+node_modules/
+.env
+dist/
+.DS_Store
