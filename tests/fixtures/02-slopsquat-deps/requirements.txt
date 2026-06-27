@@ -1,0 +1,8 @@
+# Mix of legit and slopsquatted/typosquatted names for audit testing.
+requests==2.31.0
+pyjwt==2.8.0
+# --- the following should be FLAGGED ---
+requessts==1.0.0          # typo of "requests"
+python-jwt==9.9.9         # near-miss / wrong package for "pyjwt"
+beautifulsoup==1.0.0      # should be beautifulsoup4
+totally-made-up-helper    # hallucinated package, does not exist on PyPI
