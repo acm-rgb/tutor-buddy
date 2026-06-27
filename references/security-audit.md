@@ -90,4 +90,12 @@ Omit the "Workspaces scanned" line for a single-root project.
 
 If anything in group A is a FAIL involving a real secret, do not proceed to phase 5 until it is resolved.
 
-Token note: run scanners and read their machine output yourself; report counts and the specific findings, never the full logs.
+## Token economy in the audit
+
+This phase is the most expensive one - scanners are verbose and codebases are large. Keep it cheap *without* narrowing coverage (an unscanned workspace is never an acceptable saving):
+
+- **One pass over the tree.** Prefer a single whole-tree scan to many per-file ones: `osv-scanner -r .` covers every workspace in one run; `gitleaks detect` walks the whole repo and history once. Reach for per-manifest scans only when a tool cannot do the tree in one pass.
+- **Ask tools for structured output.** Run scanners with machine-readable flags (`--format json`, `--omit=dev`, etc.) and extract only the fields you report (package, severity, count). Do not read or echo the human-formatted log.
+- **Grep, don't read, for secrets.** Match the high-signal patterns with Grep across tracked files; open a file only to confirm a hit and read just the matching lines, never the whole file.
+- **Registry checks in bulk.** When verifying dependency names, gather the full direct-dependency list first, then check them together, rather than reading source files one by one to discover imports.
+- **Report by counts.** The final report is PASS/FAIL/N/A plus a one-line reason and counts. Never paste scanner logs, full manifests, or file contents into it.

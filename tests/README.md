@@ -29,3 +29,21 @@ audit ("is this project safe?"), and compare the report against that fixture's
 > The secrets in these fixtures are **fake and structurally invalid** — they exist only to
 > trip the grep patterns in the audit. They are intentionally placed in source files rather
 > than `.env`, because the repo's `.gitignore` excludes `.env`.
+
+## Measuring token cost
+
+Token economy is a stated goal of the skill, so treat it like any other claim: measure it,
+don't assume it. To check whether a change to `SKILL.md` or `references/security-audit.md`
+made the audit cheaper or more expensive, run the **same fixture** before and after the
+change and compare the session's token usage (e.g. Claude Code's `/cost`, or the usage
+reported at the end of the run).
+
+What to look for:
+
+- Total tokens for one full audit of a fixture should trend **down or flat**, never up, for
+  the same correct result.
+- Coverage must be identical across the two runs — same workspaces scanned, same checks run.
+  A drop in tokens that comes from skipping a check is a regression, not a win.
+
+`04-monorepo-hidden-workspace` is the most useful fixture here: it has the most to scan, so
+it best exposes both wasteful reading and an accidental coverage cut.

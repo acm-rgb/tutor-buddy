@@ -15,14 +15,16 @@ A workflow for taking a software project from idea to a secured GitHub repo. The
 
 ## Token economy (hard constraint)
 
-The user asked for this explicitly. Treat tokens as a budget:
+The user asked for this explicitly. Treat tokens as a budget, and spend the fewest that still do the job correctly. Concrete rules, in priority order:
 
-- Locate before reading: use Glob/Grep to find the right file and lines, then read only those lines. Do not read whole files when a targeted read works.
-- Never paste large file contents or full tool logs back to the user. Summarize: counts, the specific findings that matter, and the decision needed.
-- Do not re-read files already in context. Remember what you have seen.
-- Batch questions. Ask several at once, each with a sensible default, so a beginner can reply "defaults."
-- Keep your own prose tight. Short status lines, not essays.
-- Read a reference file only when you actually enter its phase.
+- **Locate before reading.** Use Glob/Grep to find the exact file and lines, then read only those lines (use line offsets/limits or Grep with a few lines of context). Reading a whole file is a last resort that needs a reason - "I needed to see the imports" is a reason, "to be safe" is not.
+- **Read once.** Keep a running mental list of every file and line range you have already seen this session. Before any read, check that list first; never re-read what is already in context.
+- **Summarize tool output, never echo it.** Run scanners and read their machine output yourself; report counts, severities, and the specific findings that need a decision. Never paste a full log, a full file, or a full dependency tree back to the user. Prefer machine-readable scanner flags (e.g. JSON output) so you can extract the few fields that matter instead of scanning prose.
+- **Batch questions.** Ask several at once, each with a sensible default, so a beginner can reply "defaults" in one turn instead of many.
+- **Keep your own prose tight.** One-line status per milestone; a compact table or list for findings. No restating the plan, no essays, no narrating what you are about to do.
+- **Defer loading.** Read a reference file only when you actually enter its phase. Do not pre-read phases you may never reach.
+
+**The one thing token economy may never do: skip a check.** Spending fewer tokens applies to *how you read and report* - never to *what you verify*. Do not narrow a scan, drop a workspace, or shrink the audit's coverage to save tokens. A cheaper session that hides an unscanned workspace is the exact false confidence this skill exists to prevent; coverage wins over cost every time.
 
 ## The five phases
 
